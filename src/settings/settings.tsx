@@ -21,6 +21,7 @@ import { SettingsFormProvider } from './provider/SettingsFormProvider';
 export enum TRANSCRIPT_PLATFORM {
   assemblyAi = 'assemblyAi',
   openAi = 'openAi',
+  gemini = 'gemini',
 }
 
 export enum OBSIDIAN_PATHS {
@@ -30,6 +31,7 @@ export enum OBSIDIAN_PATHS {
 export interface ScribePluginSettings {
   assemblyAiApiKey: string;
   openAiApiKey: string;
+  geminiAiApiKey: string;
   recordingDirectory: string;
   transcriptDirectory: string;
   transcriptPlatform: TRANSCRIPT_PLATFORM;
@@ -54,11 +56,16 @@ export interface ScribePluginSettings {
   customOpenAiBaseUrl: string;
   customTranscriptModel: string;
   customChatModel: string;
+  // Klarulor
+  noteFilenameLanguage: string;
+  noteTags: string;
+  themeNoteTags: string;
 }
 
 export const DEFAULT_SETTINGS: ScribePluginSettings = {
   assemblyAiApiKey: '',
   openAiApiKey: '',
+  geminiAiApiKey: '',
   recordingDirectory: OBSIDIAN_PATHS.resourceFolder,
   transcriptDirectory: OBSIDIAN_PATHS.noteFolder,
   transcriptPlatform: TRANSCRIPT_PLATFORM.openAi,
@@ -78,11 +85,14 @@ export const DEFAULT_SETTINGS: ScribePluginSettings = {
   isFrontMatterLinkToScribe: true,
   selectedAudioDeviceId: '',
   audioFileFormat: 'webm',
+  noteFilenameLanguage: "English",
+  noteTags: "#voice-note",
+  themeNoteTags: "",
   // Custom OpenAI settings
   useCustomOpenAiBaseUrl: false,
   customOpenAiBaseUrl: '',
   customTranscriptModel: 'whisper-1',
-  customChatModel: 'gpt-4o',
+  customChatModel: 'gpt-4o'
 };
 
 export async function handleSettingsTab(plugin: ScribePlugin) {
@@ -118,6 +128,7 @@ export class ScribeSettingsTab extends PluginSettingTab {
           ...DEFAULT_SETTINGS,
           openAiApiKey: this.plugin.settings.openAiApiKey,
           assemblyAiApiKey: this.plugin.settings.assemblyAiApiKey,
+          geminiAiApiKey: this.plugin.settings.geminiAiApiKey,
         };
 
         this.saveSettings();

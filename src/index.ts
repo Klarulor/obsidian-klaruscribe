@@ -19,9 +19,11 @@ import {
 } from './util/fileUtils';
 import {
   chunkAndTranscribeWithOpenAi,
+  chunkAndTranscribeWithGemini,
   type LLM_MODELS,
   llmFixMermaidChart,
   summarizeTranscript,
+  summarizeTranscriptWithGemini,
 } from './util/openAiUtils';
 import { ScribeControlsModal } from './modal/scribeControlsModal';
 import {
@@ -83,10 +85,11 @@ export default class ScribePlugin extends Plugin {
   }
 
   onunload() {}
-
+  public static globalConfig: ScribePluginSettings;
   async loadSettings() {
     const savedUserData: ScribePluginSettings = await this.loadData();
     this.settings = { ...DEFAULT_SETTINGS, ...savedUserData };
+    ScribePlugin.globalConfig = this.settings;
 
     const defaultPathSettings = await getDefaultPathSettings(this);
 
@@ -319,6 +322,10 @@ export default class ScribePlugin extends Plugin {
       await setupFileFrontmatter(this, note);
     }
 
+    const tagContent = this.settings.noteTags.split(',').join();
+    await this.app.vault.append(note, `\n${tagContent}\n`);
+
+
     await this.cleanup();
 
     if (!isAppendToActiveFile) {
@@ -373,7 +380,7 @@ export default class ScribePlugin extends Plugin {
       if (sectionOutputPrefix || sectionOutputPostfix) {
         const textToAppend = `## ${sectionHeader}\n${sectionOutputPrefix || ''}\n${sectionValue}\n${sectionOutputPostfix || ''}`;
 
-        await appendTextToNote(this, note, textToAppend);
+        await appendTextToNote(this, note, textToAppend, undefined);
 
         return;
       }
@@ -411,24 +418,35 @@ export default class ScribePlugin extends Plugin {
       new Notice(
         `Scribe: 🎧 Beginning transcription w/ ${this.settings.transcriptPlatform}`,
       );
-      const transcript =
-        this.settings.transcriptPlatform === TRANSCRIPT_PLATFORM.assemblyAi
-          ? await transcribeAudioWithAssemblyAi(
-              this.settings.assemblyAiApiKey,
-              audioBuffer,
-              scribeOptions,
-            )
-          : await chunkAndTranscribeWithOpenAi(
-              this.settings.openAiApiKey,
-              audioBuffer,
-              scribeOptions,
-              this.settings.useCustomOpenAiBaseUrl 
-                ? this.settings.customOpenAiBaseUrl 
-                : undefined,
-              this.settings.useCustomOpenAiBaseUrl 
-                ? this.settings.customTranscriptModel 
-                : undefined,
-            );
+      
+      let transcript = '';
+      if (this.settings.transcriptPlatform === TRANSCRIPT_PLATFORM.assemblyAi) {
+        transcript = await transcribeAudioWithAssemblyAi(
+          this.settings.assemblyAiApiKey,
+          audioBuffer,
+          scribeOptions,
+        );
+      } else if (
+        this.settings.transcriptPlatform === TRANSCRIPT_PLATFORM.gemini
+      ) {
+        transcript = await chunkAndTranscribeWithGemini(
+          this.settings.geminiAiApiKey,
+          audioBuffer,
+          scribeOptions,
+        );
+      } else {
+        transcript = await chunkAndTranscribeWithOpenAi(
+          this.settings.openAiApiKey,
+          audioBuffer,
+          scribeOptions,
+          this.settings.useCustomOpenAiBaseUrl
+            ? this.settings.customOpenAiBaseUrl
+            : undefined,
+          this.settings.useCustomOpenAiBaseUrl
+            ? this.settings.customTranscriptModel
+            : undefined,
+        );
+      }
 
       new Notice(
         `Scribe: 🎧 Completed transcription  w/ ${this.settings.transcriptPlatform}`,
@@ -453,25 +471,49 @@ export default class ScribePlugin extends Plugin {
   ) {
     new Notice('Scribe: 🧠 Sending to LLM to summarize');
 
-    const customBaseUrl = this.settings.useCustomOpenAiBaseUrl 
-      ? this.settings.customOpenAiBaseUrl 
+    const customBaseUrl = this.settings.useCustomOpenAiBaseUrl
+      ? this.settings.customOpenAiBaseUrl
       : undefined;
-    const customChatModel = this.settings.useCustomOpenAiBaseUrl 
-      ? this.settings.customChatModel 
+    const customChatModel = this.settings.useCustomOpenAiBaseUrl
+      ? this.settings.customChatModel
       : undefined;
 
-    const llmSummary = await summarizeTranscript(
-      this.settings.openAiApiKey,
-      transcript,
-      scribeOptions,
-      this.settings.llmModel,
-      customBaseUrl,
-      customChatModel,
-    );
+    const isGeminiSummary = scribeOptions.llmModel.includes('gemini');
+
+    const llmSummary = isGeminiSummary
+      ? await this.handleGeminiSummary(transcript, scribeOptions)
+      : await summarizeTranscript(
+          this.settings.openAiApiKey,
+          transcript,
+          scribeOptions,
+          this.settings.llmModel,
+          customBaseUrl,
+          customChatModel,
+        );
+
+      llmSummary.fileTitle = llmSummary.fileTitle
+        ? llmSummary.fileTitle.replace(/[/\\?%*:|"<>]/g, '-')
+        : undefined;
 
     new Notice('Scribe: 🧠 LLM summation complete');
 
     return llmSummary;
+  }
+
+  private async handleGeminiSummary(
+    transcript: string,
+    scribeOptions: ScribeOptions,
+  ) {
+    if (!this.settings.geminiAiApiKey) {
+      throw new Error('Gemini API key is missing for summaries.');
+    }
+
+    return await summarizeTranscriptWithGemini(
+      this.settings.geminiAiApiKey,
+      transcript,
+      scribeOptions,
+      scribeOptions.llmModel,
+    );
   }
 
   cleanup() {

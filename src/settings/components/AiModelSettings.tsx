@@ -90,9 +90,26 @@ export const AiModelSettings: React.FC<{
           >
             <option value={TRANSCRIPT_PLATFORM.openAi}>OpenAi</option>
             <option value={TRANSCRIPT_PLATFORM.assemblyAi}>AssemblyAI</option>
+            <option value={TRANSCRIPT_PLATFORM.gemini}>Gemini</option>
           </select>
         }
       />
+
+      <SettingsItem
+            name="Custom transcription model"
+            description="The model name to use for audio transcription (e.g., whisper-1, faster-whisper, etc.)"
+            control={
+              <input
+                type="text"
+                placeholder="whisper-1"
+                value={customTranscriptModel}
+                onChange={(e) =>
+                  handleCustomTranscriptModelChange(e.target.value)
+                }
+                className="text-input"
+              />
+            }
+          />
 
       {transcriptPlatform === TRANSCRIPT_PLATFORM.assemblyAi && (
         <SettingsItem
@@ -186,21 +203,7 @@ export const AiModelSettings: React.FC<{
             }
           />
 
-          <SettingsItem
-            name="Custom transcription model"
-            description="The model name to use for audio transcription (e.g., whisper-1, faster-whisper, etc.)"
-            control={
-              <input
-                type="text"
-                placeholder="whisper-1"
-                value={customTranscriptModel}
-                onChange={(e) =>
-                  handleCustomTranscriptModelChange(e.target.value)
-                }
-                className="text-input"
-              />
-            }
-          />
+          
 
           <SettingsItem
             name="Custom chat model"

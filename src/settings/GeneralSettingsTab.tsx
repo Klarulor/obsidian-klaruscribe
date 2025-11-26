@@ -128,6 +128,24 @@ function GeneralSettingsTab() {
         placeholder="YYYY-MM-DD"
         disabled={!isDateInPrefix}
       />
+      <SettingsInput
+        {...register('noteFilenameLanguage')}
+        name="Transcript filename language"
+        description="This will be the language used for the transcript filename prefix"
+        placeholder="English/Russian/..."
+      />
+       <SettingsInput
+        {...register('noteTags')}
+        name="Transcript file header tags"
+        description="Those tags will be added in the header of the transcript note"
+        placeholder="#voice-note, must be delimited by commas"
+      />
+      <SettingsInput
+        {...register('themeNoteTags')}
+        name="Transcript file header tags for themes"
+        description="Those tags will be added in the header of the transcript note if content themes are included through LLM"
+        placeholder="#diary/#technical/#engineering, must be delimited by commas"
+      />
 
       {isDateInPrefix && (
         <div>

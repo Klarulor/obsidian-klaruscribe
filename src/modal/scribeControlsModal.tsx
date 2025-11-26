@@ -65,7 +65,7 @@ const ScribeModal: React.FC<{ plugin: ScribePlugin }> = ({ plugin }) => {
     activeNoteTemplate: plugin.settings.activeNoteTemplate,
   });
 
-  const hasOpenAiApiKey = Boolean(plugin.settings.openAiApiKey);
+  const hasAnyAiApiKey = Boolean(plugin.settings.openAiApiKey || plugin.settings.geminiAiApiKey);
 
   const handleStart = async () => {
     setRecordingState('recording');
@@ -110,19 +110,20 @@ const ScribeModal: React.FC<{ plugin: ScribePlugin }> = ({ plugin }) => {
 
   return (
     <div className="scribe-modal-container">
-      {!hasOpenAiApiKey && (
+      {!hasAnyAiApiKey && (
         <div className="scribe-settings-warning-container">
           <h1>
-            ️<CircleAlert /> Missing Open AI API key
+            ️<CircleAlert /> Missing Any AI API key
           </h1>
           <h2 className="scribe-settings-warning">
             Please enter the key in the plugin settings.
           </h2>
           <p>You can get your API key here</p>
           <a href="https://platform.openai.com/settings">OpenAI Platform</a>
+          <a href="https://ai.google.dev/gemini-api/docs/api-key">Gemini Platform</a>
         </div>
       )}
-      {hasOpenAiApiKey && (
+      {hasAnyAiApiKey && (
         <>
           <ModalRecordingTimer startTimeMs={recordingStartTimeMs} />
 

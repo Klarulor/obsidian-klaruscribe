@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-scribe-plugin",
-	"version": "2.2.0",
+	"version": "2.2.1",
 	"description": "An Obsidian plugin for recording voice notes, transcribing the audio, and summarizing the text - All in one",
 	"main": "build/main.js",
 	"scripts": {
@@ -10,7 +10,7 @@
 		"update-all-deps": "npm outdated | awk 'NR>1 {print $1\"@\"$4}' | xargs npm install"
 	},
 	"keywords": [],
-	"author": "Mike Alicea",
+	"author": "Mike Alicea. Forked by Klarulor",
 	"license": "MIT",
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
@@ -28,6 +28,8 @@
 		"@ffmpeg/ffmpeg": "^0.12.15",
 		"@ffmpeg/util": "^0.12.2",
 		"@fix-webm-duration/fix": "^1.0.1",
+		"@google/genai": "^1.30.0",
+		"@google/generative-ai": "^0.24.1",
 		"@langchain/core": "^0.3.40",
 		"@langchain/openai": "^0.5.10",
 		"assemblyai": "^4.9.0",

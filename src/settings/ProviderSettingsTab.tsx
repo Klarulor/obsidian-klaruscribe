@@ -23,6 +23,12 @@ function ProviderSettingsTab() {
         description="You can find this in your AssemblyAI dev console - https://www.assemblyai.com/app/account"
         placeholder="c3p0..."
       />
+      <SettingsInput
+        {...register('geminiAiApiKey')}
+        name="Gemini API key"
+        description="You can find this in your Gemini dev console - https://www.gemini.com/app/account"
+        placeholder="..."
+      />
     </div>
   );
 }

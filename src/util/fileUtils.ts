@@ -1,6 +1,6 @@
 import { normalizePath, type TFile } from 'obsidian';
 
-import type ScribePlugin from 'src';
+import ScribePlugin from 'src';
 import { OBSIDIAN_PATHS } from 'src/settings/settings';
 import { getDefaultPathSettings } from './pathUtils';
 
@@ -64,7 +64,6 @@ export async function createNewNote(
       const uuid = Math.floor(Math.random() * 1000);
       notePath = normalizePath(`${pathToSave}/${fileName}.${uuid}.md`);
     }
-
     const savedFile = await plugin.app.vault.create(notePath, '');
 
     return savedFile;
