@@ -418,6 +418,19 @@ interface SummaryField {
   optional?: boolean;
 }
 
+function getThemeTagOptions(): string[] {
+  const config = ScribePlugin.globalConfig;
+  if (!config?.themeNoteTags) {
+    return [];
+  }
+
+  return config.themeNoteTags
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .map((tag) => (tag.startsWith('#') ? tag : `#${tag}`));
+}
+
 function buildSummaryFields({ activeNoteTemplate }: ScribeOptions): SummaryField[] {
   const baseField: SummaryField = {
     key: 'fileTitle',
@@ -431,7 +444,20 @@ function buildSummaryFields({ activeNoteTemplate }: ScribeOptions): SummaryField
     optional: section.isSectionOptional,
   }));
 
-  return [baseField, ...sectionFields];
+  const fields: SummaryField[] = [baseField, ...sectionFields];
+  const themeTagOptions = getThemeTagOptions();
+
+  if (themeTagOptions.length) {
+    fields.push({
+      key: 'themeTags',
+      description: `Выбери любые релевантные теги из списка: ${themeTagOptions.join(
+        ', ',
+      )}. Верни строку, где теги перечислены через пробел и каждый начинается с символа #. Верни пустую строку, если ни один тег не подходит.`,
+      optional: true,
+    });
+  }
+
+  return fields;
 }
 
 function buildSummarySchema(options: ScribeOptions) {

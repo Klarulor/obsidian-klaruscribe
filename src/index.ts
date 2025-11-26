@@ -322,8 +322,14 @@ export default class ScribePlugin extends Plugin {
       await setupFileFrontmatter(this, note);
     }
 
-    const tagContent = this.settings.noteTags.split(',').join();
-    await this.app.vault.append(note, `\n${tagContent}\n`);
+    const baseTags = this.parseTagList(this.settings.noteTags);
+    const baseTagLine = baseTags.join(' ');
+    const baseTagBlock = baseTagLine ? `${baseTagLine}\n` : '';
+    const baseTagSet = new Set(baseTags);
+
+    if (baseTagBlock) {
+      await appendTextToNote(this, note, baseTagBlock);
+    }
 
 
     await this.cleanup();
@@ -362,6 +368,11 @@ export default class ScribePlugin extends Plugin {
       transcript,
       scribeOptions,
     );
+
+    const themeTags = this.getThemeTagsFromSummary(llmSummary, baseTagSet);
+    if (themeTags.length) {
+      await this.addThemeTagsToNote(note, themeTags, baseTagBlock);
+    }
 
     activeNoteTemplate.sections.forEach(async (section) => {
       const {
@@ -514,6 +525,70 @@ export default class ScribePlugin extends Plugin {
       scribeOptions,
       scribeOptions.llmModel,
     );
+  }
+
+  private parseTagList(input?: string): string[] {
+    if (!input) {
+      return [];
+    }
+
+    const normalizedTags = input
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .map((tag) => (tag.startsWith('#') ? tag : `#${tag}`));
+
+    return Array.from(new Set(normalizedTags));
+  }
+
+  private getThemeTagsFromSummary(
+    llmSummary: Record<string, string | null | undefined>,
+    existingTags: Set<string>,
+  ): string[] {
+    const candidateTags = new Set(
+      this.parseTagList(this.settings.themeNoteTags),
+    );
+    if (!candidateTags.size) {
+      return [];
+    }
+
+    const rawThemeTags = llmSummary.themeTags || '';
+    const parsedTags = this.parseTagList(rawThemeTags);
+
+    return parsedTags.filter(
+      (tag) => candidateTags.has(tag) && !existingTags.has(tag),
+    );
+  }
+
+  private async addThemeTagsToNote(
+    note: TFile,
+    themeTags: string[],
+    baseTagBlock: string,
+  ) {
+    const themeLine = themeTags.join(' ');
+    if (!themeLine) {
+      return;
+    }
+
+    const themeBlock = `${themeLine}\n`;
+
+    await this.app.vault.process(note, (data) => {
+      if (baseTagBlock && data.includes(baseTagBlock)) {
+        return data.replace(baseTagBlock, `${baseTagBlock}${themeBlock}`);
+      }
+
+      if (data.startsWith('---')) {
+        const closingFrontMatterIndex = data.indexOf('\n---', 3);
+        if (closingFrontMatterIndex !== -1) {
+          const afterFrontMatter = closingFrontMatterIndex + '\n---'.length + 1;
+          return `${data.slice(0, afterFrontMatter)}${themeBlock}${data.slice(
+            afterFrontMatter,
+          )}`;
+        }
+      }
+
+      return `${themeBlock}${data}`;
+    });
   }
 
   cleanup() {
